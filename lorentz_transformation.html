@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three.js 360° Visualization with Control</title>
+    <style>
+        body { margin: 0; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Set up scene
+        const scene = new THREE.Scene();
+
+        // Set up camera
+        const zoomFactor = 0.75; // Zoom in by 25%
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 0, 15 * zoomFactor); // Zoom in
+        camera.lookAt(scene.position); // Look at the center of the scene
+
+        // Set up renderer
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        // Create meshes with grids
+        const meshCount = 3;
+        const meshes = [];
+        let gap = 1.0; // Initial gap between layers
+        let stackPosition = 0;
+
+        for (let i = 0; i < meshCount; i++) {
+            const gridHelper = new THREE.GridHelper(5, 10, 0xffffff, 0xffffff);
+            gridHelper.position.y = i * gap; // Stack meshes vertically with adjustable gap
+            scene.add(gridHelper);
+            meshes.push(gridHelper);
+        }
+
+        // Center the scene on the screen
+        scene.position.set(0, -gap * meshCount / 2, 0);
+
+        // Add event listeners for user control
+        let mouseX = 0;
+        let mouseY = 0;
+        let isMouseDown = false;
+        let previousMouseX = 0;
+        let previousMouseY = 0;
+
+        function onMouseMove(event) {
+            if (!isMouseDown) return;
+
+            const deltaX = event.clientX - previousMouseX;
+            const deltaY = event.clientY - previousMouseY;
+
+            meshes.forEach(mesh => {
+                mesh.rotation.y += deltaX * 0.01; // Rotate meshes based on mouse movement
+                mesh.rotation.z += deltaY * 0.01; // Rotate meshes based on mouse movement
+            });
+
+            previousMouseX = event.clientX;
+            previousMouseY = event.clientY;
+        }
+
+        function onMouseDown(event) {
+            isMouseDown = true;
+            previousMouseX = event.clientX;
+            previousMouseY = event.clientY;
+        }
+
+        function onMouseUp() {
+            isMouseDown = false;
+        }
+
+        function onKeyDown(event) {
+            const keyCode = event.code;
+            switch (keyCode) {
+                case 'KeyW':
+                    stackPosition += 0.1; // Move stack up
+                    updateStackPosition();
+                    break;
+                case 'KeyS':
+                    stackPosition -= 0.1; // Move stack down
+                    updateStackPosition();
+                    break;
+                default:
+                    break;
+            }
+        }
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mousedown', onMouseDown);
+        window.addEventListener('mouseup', onMouseUp);
+        window.addEventListener('keydown', onKeyDown);
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+
+        // Update stack position
+        function updateStackPosition() {
+            meshes.forEach((mesh, index) => {
+                mesh.position.y = index * gap + stackPosition; // Adjust the position of each mesh in the stack
+            });
+        }
+
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // Render scene
+            renderer.render(scene, camera);
+        }
+
+        // Call animate function
+        animate();
+    </script>
+</body>
+</html>
